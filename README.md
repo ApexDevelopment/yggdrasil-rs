@@ -1,64 +1,63 @@
 # yggdrasil-rs
 
 A Rust port of [Yggdrasil](https://yggdrasil-network.github.io/), the end-to-end
-encrypted IPv6 mesh network. Routing comes from
-[petrified](../petrified), the Rust port of Ironwood.
+encrypted IPv6 mesh network.
 
-It is compatible with [yggdrasil-go](https://github.com/yggdrasil-network/yggdrasil-go)
-v0.5.15: nodes of both implementations peer with each other over every transport,
-route traffic for each other, and answer each other's nodeinfo and debug requests.
-The command-line tools take the same flags, read the same configuration files and
-speak the same admin socket protocol, so either `yggdrasilctl` works with either node.
+It works alongside [yggdrasil-go](https://github.com/yggdrasil-network/yggdrasil-go)
+v0.5.15. Nodes of both implementations can peer with each other, route traffic for
+each other, and answer each other's nodeinfo and debug requests. The programs take
+the same flags, read the same configuration files and use the same admin socket
+protocol, so either implementation's `yggdrasilctl` can query either node.
 
-## Programs
+## Building
 
-| Program        | Purpose                                              |
-| -------------- | ---------------------------------------------------- |
-| `yggdrasil`    | The node: `yggdrasil -useconffile /etc/yggdrasil.conf` |
-| `yggdrasilctl` | Queries a running node: `yggdrasilctl getPeers`      |
-| `genkeys`      | Searches for keys with higher addresses              |
+You need a recent stable Rust toolchain (it is developed with 1.97). Routing comes from
+[petrified](../petrified), the Rust port of Ironwood, which must be checked out
+next to this repository as `../petrified`.
 
 ```sh
 cargo build --release
+```
+
+This builds three programs in `target/release`:
+
+| Program        | Purpose                                 |
+| -------------- | --------------------------------------- |
+| `yggdrasil`    | Runs a node                             |
+| `yggdrasilctl` | Queries a running node's admin socket   |
+| `genkeys`      | Searches for keys with higher addresses |
+
+To run a node, generate a configuration and start it with that file. Creating
+the TUN adapter needs root, or `CAP_NET_ADMIN` on Linux:
+
+```sh
 ./target/release/yggdrasil -genconf > yggdrasil.conf
 sudo ./target/release/yggdrasil -useconffile yggdrasil.conf
 ```
 
-## Layout
+Then query it with `yggdrasilctl`, for example `yggdrasilctl getPeers`.
 
-The modules mirror yggdrasil-go's packages:
+## Peering
 
-| Go          | Rust                   |                                                     |
-| ----------- | ---------------------- | --------------------------------------------------- |
-| `core`      | `yggdrasil::core`      | The node, peer links and transports, nodeinfo       |
-| `address`   | `yggdrasil::address`   | IPv6 addresses and subnets derived from keys        |
-| `ipv6rwc`   | `yggdrasil::ipv6rwc`   | IPv6 packets addressed by IP instead of key         |
-| `tun`       | `yggdrasil::tun`       | The TUN adapter                                     |
-| `multicast` | `yggdrasil::multicast` | Peer discovery on local networks                    |
-| `admin`     | `yggdrasil::admin`     | The admin socket                                    |
-| `config`    | `yggdrasil::config`    | Configuration files                                 |
-| `version`   | `yggdrasil::version`   | Build information                                   |
+Peers and listeners are given as URIs, such as `tls://example.com:443`. They take
+the same query options as in yggdrasil-go: `key`, `priority`, `password`,
+`maxbackoff` and `sni`.
 
-## Transports
+| Scheme                    | Connect | Listen | Notes                                      |
+| ------------------------- | ------- | ------ | ------------------------------------------ |
+| `tcp://`                  | yes     | yes    |                                            |
+| `tls://`                  | yes     | yes    | Self-signed certificates, as in Go         |
+| `quic://`                 | yes     | yes    |                                            |
+| `ws://`                   | yes     | yes    | Uses the `ygg-ws` subprotocol              |
+| `wss://`                  | yes     | no     | Put a `ws://` listener behind a TLS proxy  |
+| `unix://`                 | yes     | yes    | Unix-like systems                          |
+| `socks://`, `sockstls://` | yes     | no     | `socks://[user:pass@]proxy:port/host:port` |
 
-Peers are given as URIs, with the same options as yggdrasil-go
-(`key`, `priority`, `password`, `maxbackoff`, `sni`):
+To carry links over another transport, implement `core::LinkProtocol`, which
+turns a URI into a byte stream, and register it for a URI scheme with
+`Core::register_link_protocol`.
 
-| Scheme              | Dial | Listen |                                           |
-| ------------------- | ---- | ------ | ----------------------------------------- |
-| `tcp://`            | yes  | yes    |                                           |
-| `tls://`            | yes  | yes    | Self-signed certificates, as in Go        |
-| `quic://`           | yes  | yes    | One bidirectional stream per connection   |
-| `ws://`             | yes  | yes    | Binary messages, `ygg-ws` subprotocol     |
-| `wss://`            | yes  | no     | Put a `ws://` listener behind a proxy     |
-| `unix://`           | yes  | yes    | Unix only                                 |
-| `socks://`, `sockstls://` | yes | no | `socks://[user:pass@]proxy:port/host:port` |
-
-Other transports plug in through `core::LinkProtocol`, which turns a URI into a
-byte stream. Register one with `Core::register_link_protocol`, and peers and
-listeners with its scheme will use it.
-
-## As a library
+## Using the library
 
 ```rust
 use yggdrasil::core::{Core, Options};
@@ -72,55 +71,70 @@ core.write_to(b"hello", &their_key)?;
 let (from, packet) = core.recv().await?;
 ```
 
-`Core` runs on tokio. Wrap it in `ipv6rwc::ReadWriteCloser` to send and receive
-IPv6 packets addressed by Yggdrasil IP; it looks up the keys behind addresses.
+`Core` runs on tokio. To send and receive IPv6 packets addressed by Yggdrasil IP
+address instead of by key, wrap it in `ipv6rwc::ReadWriteCloser`.
 
-## Differences from Go
+The modules match yggdrasil-go's packages:
 
-### Fixed
-
-These yggdrasil-go behaviours look unintended, so yggdrasil-rs does not copy them:
-
-- In `MulticastInterfaces`, Go fills fields an entry leaves out from the default
-  entry in the same position: on Linux, `[{Regex: "eth0"}]` beacons and listens,
-  while a second entry written the same way does neither. Here every entry
-  starts empty, so unset fields are always `false`, `""` or `0`.
-- Interfaces use the first matching entry of `MulticastInterfaces`, in order. Go
-  iterates a map, so with overlapping regexes its choice varies between runs.
-- `getPeers` sorts by exact priority, cost and uptime. Go compares by
-  subtracting, which wraps around for large priorities and costs, and treats
-  uptimes less than a second apart as equal.
-
-### Other differences
-
-- Goroutines and actors are tokio tasks. Configuration is an `Options` struct
-  rather than a list of `SetupOption`s, and `Core::new` takes the private key and
-  makes the TLS certificate itself.
-- I/O errors use Rust's wording, e.g. `Connection refused (os error 111)`.
-- A `null` list in the configuration is treated as empty, where Go would keep it
-  `null` when writing the configuration back out.
-- Not ported: the Windows service wrapper, OpenBSD `pledge`, the mobile bindings,
-  and WebSocket proxies from `HTTP_PROXY`.
-- On Android and iOS, the TUN adapter takes a file descriptor from the VPN API
-  (`tun::InterfaceSource::FileDescriptor`).
-- The build name and version default to this crate's. Set `YGGDRASIL_BUILD_NAME`
-  and `YGGDRASIL_BUILD_VERSION` at build time to override them, or
-  `YGGDRASIL_DEFAULT_CONFIG` and `YGGDRASIL_DEFAULT_ADMIN_LISTEN` to change the
-  platform defaults, as Go's linker flags do.
-
-## Known issues
-
-The first nodeinfo or `debug_remote*` request to a node right after peering
-with it usually times out, and later ones succeed. yggdrasil-go does the same, so
-this comes from the protocol rather than the port: the request is sent once,
-and appears to be lost while the session or route is still being set up. Retry
-if a request times out.
+| Go package  | Rust module            | Contents                                      |
+| ----------- | ---------------------- | --------------------------------------------- |
+| `core`      | `yggdrasil::core`      | The node, peer links, transports and nodeinfo |
+| `address`   | `yggdrasil::address`   | IPv6 addresses and subnets derived from keys  |
+| `ipv6rwc`   | `yggdrasil::ipv6rwc`   | IPv6 packets addressed by IP address          |
+| `tun`       | `yggdrasil::tun`       | The TUN adapter                               |
+| `multicast` | `yggdrasil::multicast` | Peer discovery on local networks              |
+| `admin`     | `yggdrasil::admin`     | The admin socket                              |
+| `config`    | `yggdrasil::config`    | Configuration files                           |
+| `version`   | `yggdrasil::version`   | Build information                             |
 
 ## Platforms
 
-Linux, macOS, Windows (with `wintun.dll` next to the binary), FreeBSD and
-Android build from the same code. Build with `--no-default-features` to leave
-out the TUN adapter.
+The code builds for Linux, macOS, Windows, FreeBSD and Android. On Windows, put
+`wintun.dll` next to the program. On Android and iOS, the operating system's VPN
+API creates the TUN device, so pass its file descriptor with
+`tun::InterfaceSource::FileDescriptor`. To build without the TUN adapter, use
+`--no-default-features`.
+
+## Differences from yggdrasil-go
+
+### Fixed behaviour
+
+yggdrasil-rs does not copy these yggdrasil-go behaviours, which look unintended:
+
+- In yggdrasil-go, an entry in `MulticastInterfaces` takes any field it leaves
+  out from the default entry in the same position. On Linux, a first entry of
+  `{Regex: "eth0"}` therefore beacons and listens, and a second entry written the
+  same way does neither. In yggdrasil-rs, fields that an entry leaves out are
+  always `false`, empty or zero.
+- When several `MulticastInterfaces` regexes match an interface, yggdrasil-rs
+  uses the first match in the list. yggdrasil-go's choice can change between runs.
+- `getPeers` sorts by exact priority, cost and uptime. yggdrasil-go sorts costs
+  more than 2^63 apart in the wrong order, and treats uptimes less than a
+  second apart as equal.
+
+### Other differences
+
+- The library API differs. Configuration is an `Options` struct instead of a list
+  of `SetupOption` values, and `Core::new` takes the private key and creates the
+  TLS certificate itself.
+- I/O error messages use Rust's wording, such as `Connection refused (os error 111)`.
+- A configuration list set to `null` is read as an empty list. yggdrasil-go keeps
+  it as `null` when it writes the configuration back out.
+- The Windows service wrapper, OpenBSD `pledge`, the mobile bindings, and
+  WebSocket proxies from `HTTP_PROXY` are not ported.
+- The build name and version reported in nodeinfo default to this crate's name
+  and version. To change them, set `YGGDRASIL_BUILD_NAME` and
+  `YGGDRASIL_BUILD_VERSION` when building. `YGGDRASIL_DEFAULT_CONFIG` and
+  `YGGDRASIL_DEFAULT_ADMIN_LISTEN` change the default configuration file and
+  admin socket address. These replace the linker flags yggdrasil-go uses.
+
+## Known issues
+
+The first nodeinfo or `debug_remote*` request to a node usually times out if it
+is sent right after the two nodes connect. Later requests succeed. yggdrasil-go
+behaves the same way. The request is sent once, and it probably gets lost while
+the encrypted session or the route is still being set up. If a request times
+out, send it again.
 
 ## Testing
 
@@ -129,21 +143,11 @@ cargo test --lib --test links    # Rust only
 cargo test                       # also runs the yggdrasil-go interop tests
 ```
 
-The interop tests need Go 1.26 or newer (set `GO=/path/to/go` if it is not on
-`PATH`) and network access to download yggdrasil-go. `interop/build.sh` builds
-yggdrasil-go's own `yggdrasil` and `yggdrasilctl`, and a harness from an
-unmodified copy of upstream with only files that export internals added. Then:
-
-- `tests/go_vectors.rs` sends random inputs through both implementations with
-  proptest and requires identical results: addresses, link handshakes (including
-  corrupted ones), multicast beacons, ICMPv6 replies, and configuration files,
-  which must parse, normalise and print as HJSON and JSON byte for byte alike;
-- `tests/go_network.rs` runs mixed networks: daemons of each implementation peer
-  over every transport in both directions, query each other's nodeinfo, agree on
-  the spanning tree, and enforce passwords and allowed keys alike; IPv6 traffic
-  crosses a Go–Rust–Go–Rust chain; each `yggdrasilctl` gives the same output
-  against each node; and both `yggdrasil` binaries print the same for the same
-  configurations and flags;
-- `tests/go_tun.rs` puts nodes in unprivileged network namespaces with real TUN
-  adapters and pings between them, including ICMPv6 "packet too big" replies. It
-  skips itself where user namespaces are unavailable.
+The interop tests need Go 1.26 or newer and network access to download
+yggdrasil-go. If `go` is not on your `PATH`, set `GO=/path/to/go`. The tests build
+yggdrasil-go from unmodified upstream source. They check that both
+implementations give the same results for the same inputs, that their nodes work
+together in mixed networks, and that each implementation's programs work with
+the other's nodes.
+The TUN tests run nodes in unprivileged network namespaces, and skip themselves
+where those are unavailable.
