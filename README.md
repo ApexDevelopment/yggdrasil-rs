@@ -9,11 +9,34 @@ each other, and answer each other's nodeinfo and debug requests. The programs ta
 the same flags, read the same configuration files and use the same admin socket
 protocol, so either implementation's `yggdrasilctl` can query either node.
 
+## Installing
+
+On Linux, `contrib/install.sh` installs static x86_64 or aarch64 binaries from a
+release, and works on atomic distributions such as Fedora Silverblue. It puts the
+programs in `/usr/local/bin`, installs and starts a systemd service, and creates
+the `yggdrasil` group. It uses `sudo` or `doas` when it needs root.
+
+```sh
+curl -fsSL https://github.com/ApexDevelopment/yggdrasil-rs/releases/latest/download/install.sh | sh
+```
+
+To pass options, add `-s --` after `sh`:
+
+- `--user` installs the programs to `~/.local/bin` without root, and without the service.
+- `--version v0.1.0` installs that release instead of the latest.
+- `--no-start` installs the service without starting it.
+- `--uninstall` removes the programs and service, and keeps `/etc/yggdrasil.conf`.
+
+To build the release files, run `contrib/release.sh`. It builds static binaries
+in Podman or Docker containers, and writes the archives, their checksums and
+`install.sh` to `dist/`. Upload those files to a release. Building for an
+architecture other than the host's needs `qemu-user-static`.
+
 ## Building
 
 You need a recent stable Rust toolchain (it is developed with 1.97). Routing comes from
-[petrified](../petrified), the Rust port of Ironwood, which must be checked out
-next to this repository as `../petrified`.
+[petrified](https://crates.io/crates/petrified), the Rust port of Ironwood, which
+must be checked out next to this repository as `../petrified`.
 
 ```sh
 cargo build --release
@@ -109,6 +132,13 @@ turns a URI into a byte stream, and register it for a URI scheme with
 
 ## Using the library
 
+The crate is published as `yggdrasil-mesh`, and imported as `yggdrasil`:
+
+```toml
+[dependencies]
+yggdrasil-mesh = "0.1"
+```
+
 ```rust
 use yggdrasil::core::{Core, Options};
 use yggdrasil::PrivateKey;
@@ -199,3 +229,13 @@ together in mixed networks, and that each implementation's programs work with
 the other's nodes.
 The TUN tests run nodes in unprivileged network namespaces, and skip themselves
 where those are unavailable.
+
+`contrib/test-packages.sh` installs the Debian package, the RPM package and
+`install.sh` in Debian and Fedora containers, and checks that the nodes start and
+can reach each other. It needs Podman or Docker, cargo-deb and cargo-generate-rpm.
+
+## License
+
+yggdrasil-rs uses the same license as yggdrasil-go: the LGPLv3, with an exception
+that allows static linking without the LGPL's relinking requirements. See
+[LICENSE](LICENSE).
