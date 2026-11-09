@@ -35,8 +35,14 @@ architecture other than the host's needs `qemu-user-static`.
 ## Building
 
 You need a recent stable Rust toolchain (it is developed with 1.97). Routing comes from
-[petrified](https://crates.io/crates/petrified), the Rust port of Ironwood, which
-must be checked out next to this repository as `../petrified`.
+[petrified](https://github.com/ApexDevelopment/petrified), the Rust port of
+Ironwood, which must be checked out next to this repository:
+
+```sh
+git clone https://github.com/ApexDevelopment/petrified
+git clone https://github.com/ApexDevelopment/yggdrasil-rs
+cd yggdrasil-rs
+```
 
 ```sh
 cargo build --release
