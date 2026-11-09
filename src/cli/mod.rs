@@ -7,6 +7,9 @@ pub mod table;
 use std::time::Duration;
 
 /// Formats a duration like Go's `time.Duration.String`, e.g. `1h2m3.5s` or `1.5ms`.
+///
+/// Ported from Go's `time` package, BSD-3-Clause, Copyright 2009 The Go Authors.
+/// See THIRD-PARTY-NOTICES.
 pub fn go_duration(duration: Duration) -> String {
 	/// The last `precision` digits of `value` as a fraction without trailing zeros, and the rest.
 	fn fraction(value: u64, precision: u32) -> (String, u64) {

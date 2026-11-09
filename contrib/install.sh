@@ -14,6 +14,8 @@ RELEASES_URL="${YGGDRASIL_RS_RELEASES:-https://github.com/ApexDevelopment/yggdra
 PROGRAMS="yggdrasil yggdrasilctl genkeys"
 UNITS="yggdrasil.service yggdrasil-default-config.service"
 SYSTEM_BIN=/usr/local/bin
+SYSTEM_DOC=/usr/local/share/doc/yggdrasil
+LICENSES="LICENSE THIRD-PARTY-NOTICES"
 UNIT_DIR=/etc/systemd/system
 
 usage() {
@@ -119,6 +121,11 @@ install_user() {
 	for program in $PROGRAMS; do
 		install -m 755 "$release/$program" "$bin/$program"
 	done
+	doc="${XDG_DATA_HOME:-$HOME/.local/share}/doc/yggdrasil"
+	mkdir -p "$doc"
+	for file in $LICENSES; do
+		install -m 644 "$release/$file" "$doc/$file"
+	done
 	say "Installed $PROGRAMS to $bin"
 	case ":$PATH:" in
 		*":$bin:"*) ;;
@@ -134,6 +141,10 @@ install_system() {
 	for program in $PROGRAMS; do
 		# A fresh copy gets the right SELinux label; a moved file would keep its temporary one
 		$as_root install -m 755 "$release/$program" "$SYSTEM_BIN/$program"
+	done
+	$as_root install -d "$SYSTEM_DOC"
+	for file in $LICENSES; do
+		$as_root install -m 644 "$release/$file" "$SYSTEM_DOC/$file"
 	done
 	say "Installed $PROGRAMS to $SYSTEM_BIN"
 	if [ -x /usr/bin/yggdrasil ]; then
@@ -173,6 +184,7 @@ uninstall_user() {
 	for program in $PROGRAMS; do
 		rm -f "$bin/$program"
 	done
+	rm -rf "${XDG_DATA_HOME:-$HOME/.local/share}/doc/yggdrasil"
 	say "Removed $PROGRAMS from $bin"
 }
 
@@ -190,6 +202,7 @@ uninstall_system() {
 	for program in $PROGRAMS; do
 		$as_root rm -f "$SYSTEM_BIN/$program"
 	done
+	$as_root rm -rf "$SYSTEM_DOC"
 	say "Removed the yggdrasil service and programs. /etc/yggdrasil.conf and the yggdrasil group are kept."
 }
 

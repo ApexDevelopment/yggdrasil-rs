@@ -1,6 +1,9 @@
 //! Command-line flags with the syntax of Go's `flag` package: `-name`,
 //! `--name`, `-name=value` and `-name value`, stopping at the first argument
 //! that is not a flag.
+//!
+//! Parts are ported from Go's `flag` and `strconv` packages, BSD-3-Clause,
+//! Copyright 2009 The Go Authors. See THIRD-PARTY-NOTICES.
 
 use std::collections::HashMap;
 use std::fmt::Write;

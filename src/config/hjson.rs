@@ -1,4 +1,7 @@
 //! Writes Hjson the way hjson-go's `Marshal` does with its default options.
+//!
+//! Ported from hjson-go, MIT License, Copyright (c) 2016, 2017 Christian Zangl.
+//! See THIRD-PARTY-NOTICES.
 
 use std::sync::LazyLock;
 

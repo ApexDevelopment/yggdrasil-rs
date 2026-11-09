@@ -1,5 +1,8 @@
 //! JSON output that matches Go's `encoding/json` byte for byte: struct fields
 //! keep their order, floats are formatted like Go's, and `<`, `>` and `&` are escaped.
+//!
+//! Parts are ported from Go's `encoding/json`, BSD-3-Clause, Copyright 2009 The
+//! Go Authors. See THIRD-PARTY-NOTICES.
 
 use serde::Serialize;
 use serde_json::{Number, Value};

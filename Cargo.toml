@@ -64,6 +64,7 @@ assets = [
 	["target/release/yggdrasilctl", "usr/bin/", "755"],
 	["target/release/genkeys", "usr/bin/", "755"],
 	["README.md", "usr/share/doc/yggdrasil/", "644"],
+	["THIRD-PARTY-NOTICES", "usr/share/doc/yggdrasil/", "644"],
 ]
 systemd-units = [
 	{ unit-name = "yggdrasil", unit-scripts = "contrib/systemd", enable = true, start = true },
@@ -83,6 +84,7 @@ assets = [
 	{ source = "contrib/systemd/yggdrasil-default-config.service", dest = "/usr/lib/systemd/system/yggdrasil-default-config.service", mode = "644" },
 	{ source = "README.md", dest = "/usr/share/doc/yggdrasil/README.md", mode = "644", doc = true },
 	{ source = "LICENSE", dest = "/usr/share/licenses/yggdrasil/LICENSE", mode = "644", doc = true },
+	{ source = "THIRD-PARTY-NOTICES", dest = "/usr/share/licenses/yggdrasil/THIRD-PARTY-NOTICES", mode = "644", doc = true },
 ]
 post_install_script = "contrib/rpm/post_install.sh"
 pre_uninstall_script = "contrib/rpm/pre_uninstall.sh"

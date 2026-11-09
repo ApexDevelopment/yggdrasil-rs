@@ -1,4 +1,7 @@
 //! Hex decoding with the same error messages as Go's `encoding/hex`.
+//!
+//! Ported from Go's `encoding/hex`, BSD-3-Clause, Copyright 2009 The Go Authors.
+//! See THIRD-PARTY-NOTICES.
 
 fn value(byte: u8) -> Option<u8> {
 	(byte as char).to_digit(16).map(|digit| digit as u8)

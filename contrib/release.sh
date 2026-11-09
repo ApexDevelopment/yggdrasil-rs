@@ -44,7 +44,7 @@ for platform in $platforms; do
 			cargo build --release --locked --target $target
 			mkdir -p /tmp/$name
 			cp /build/$target/release/yggdrasil /build/$target/release/yggdrasilctl /build/$target/release/genkeys \
-				contrib/systemd/*.service README.md /tmp/$name/
+				contrib/systemd/*.service README.md LICENSE THIRD-PARTY-NOTICES /tmp/$name/
 			tar -C /tmp -czf /out/$name.tar.gz $name
 		"
 	(cd "$out" && sha256sum "$name.tar.gz" > "$name.tar.gz.sha256")

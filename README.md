@@ -148,3 +148,5 @@ The interop tests need Go 1.26 or newer and will download yggdrasil-go. The test
 ## License
 
 yggdrasil-rs uses the same license as yggdrasil-go: the LGPLv3, with an exception that allows static linking without the LGPL's relinking requirements. See [LICENSE](LICENSE).
+
+Some files contain code ported from hjson-go (MIT) and the Go standard library (BSD-3-Clause). [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES) lists them, with their licenses. Release archives and packages include both files.

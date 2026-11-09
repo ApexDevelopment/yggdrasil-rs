@@ -1,4 +1,7 @@
 //! Parses Hjson (and so JSON) the way hjson-go does.
+//!
+//! Ported from hjson-go, MIT License, Copyright (c) 2016, 2017 Christian Zangl.
+//! See THIRD-PARTY-NOTICES.
 
 use std::fmt;
 
