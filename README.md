@@ -108,6 +108,8 @@ let (from, packet) = core.recv().await?;
 
 The module names match yggdrasil-go's packages.
 
+The parts that need no operating system are a separate `no_std` crate, [yggdrasil-proto](proto), for embedded nodes: addresses, the link handshake, multicast beacons, nodeinfo and debug requests, and IPv6 address-to-key routing. Its stateful parts take packets and the current time, and return what to send, so they work with any I/O or async runtime. yggdrasil-mesh re-exports them.
+
 ## Platforms
 
 The code builds for Linux, macOS, Windows, FreeBSD and Android. On Windows, put `wintun.dll` next to the program. On Android and iOS, the operating system's VPN API creates the TUN device, so pass its file descriptor with `tun::InterfaceSource::FileDescriptor`. To build without the TUN adapter, use `--no-default-features`.
@@ -137,8 +139,8 @@ The first nodeinfo or `debug_remote*` request to a node usually times out if it 
 ## Testing
 
 ```sh
-cargo test --lib --test links    # Rust only
-cargo test                       # also runs the yggdrasil-go interop tests
+cargo test --workspace --lib --test links    # Rust only
+cargo test --workspace                       # also runs the yggdrasil-go interop tests
 ```
 
 The interop tests need Go 1.26 or newer and will download yggdrasil-go. The tests build yggdrasil-go from unmodified upstream source. They check that both implementations give the same results for the same inputs, that their nodes work together in mixed networks, and that each implementation's programs work with the other's nodes. The TUN tests run nodes in unprivileged network namespaces, and skip themselves where those are unavailable.

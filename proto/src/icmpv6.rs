@@ -1,6 +1,7 @@
 //! Builds ICMPv6 messages to hand back to the local host.
 
-use std::net::Ipv6Addr;
+use alloc::vec::Vec;
+use core::net::Ipv6Addr;
 
 pub const IPV6_HEADER_LEN: usize = 40;
 const NEXT_HEADER_ICMPV6: u8 = 58;

@@ -8,7 +8,10 @@ repository = "https://github.com/ApexDevelopment/yggdrasil-rs"
 readme = "README.md"
 keywords = ["yggdrasil", "mesh", "network", "ipv6", "vpn"]
 categories = ["network-programming", "command-line-utilities"]
-exclude = ["dist/"]
+exclude = ["dist/", "proto/"]
+
+[workspace]
+members = ["proto"]
 
 [lib]
 name = "yggdrasil"
@@ -20,8 +23,8 @@ tun = ["dep:tun-rs"]
 
 [dependencies]
 petrified = { path = "../petrified", version = "0.1.0" }
+yggdrasil-proto = { path = "proto", version = "0.1.0" }
 base64 = "0.23.1"
-blake2b_simd = "1.0.5"
 form_urlencoded = "1.2.2"
 futures-util = { version = "0.3.34", default-features = false, features = ["sink", "std"] }
 getrandom = "0.4.3"

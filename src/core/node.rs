@@ -11,9 +11,7 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::sync::{Notify, mpsc};
 use tokio_util::sync::CancellationToken;
 
-/// The first byte of every packet sent over an Ironwood session.
-pub const TYPE_SESSION_TRAFFIC: u8 = 1;
-pub const TYPE_SESSION_PROTO: u8 = 2;
+pub use yggdrasil_proto::session::{TYPE_SESSION_PROTO, TYPE_SESSION_TRAFFIC};
 
 const READ_BUFFER_SIZE: usize = 64 * 1024;
 

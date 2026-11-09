@@ -14,7 +14,7 @@ use std::time::{Duration, SystemTime};
 
 use petrified::encrypted::PacketConn;
 use petrified::network::{Config, DebugLookupInfo};
-use petrified::types::{Error, PacketConn as _, PrivateKey, PublicKey, StdPlatform};
+use petrified::types::{Error, Instant, PacketConn as _, PrivateKey, PublicKey, StdPlatform};
 use serde_json::{Map, Value};
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
@@ -32,8 +32,8 @@ use uri::PeerUri;
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
-/// Ironwood's peer messages may be up to this size, enough for any IPv6 packet.
-const PEER_MAX_MESSAGE_SIZE: u64 = 65535 * 2;
+/// The default largest peer message, as in yggdrasil-go: enough for any IPv6 packet.
+pub const DEFAULT_MAX_MESSAGE_SIZE: u64 = 65535 * 2;
 
 /// A peer to connect to at startup, optionally through a given source interface.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -54,6 +54,9 @@ pub struct Options {
 	/// Returns false for addresses that must never be dialed.
 	pub peer_filter: Option<PeerFilter>,
 	pub group_password: String,
+	/// The largest message a peer may send, and the size of the received
+	/// packet buffer. Defaults to [`DEFAULT_MAX_MESSAGE_SIZE`].
+	pub max_message_size: Option<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -137,9 +140,10 @@ impl Core {
 		let tls = TlsConfigs::new(&secret)
 			.map_err(|error| format!("error generating TLS config: {error}"))?;
 		let (path_sender, path_receiver) = mpsc::unbounded_channel();
+		let max_message_size = options.max_message_size.unwrap_or(DEFAULT_MAX_MESSAGE_SIZE);
 		let config = Config::default()
 			.with_bloom_transform(|key| subnet_for_key(key).get_key())
-			.with_peer_max_message_size(PEER_MAX_MESSAGE_SIZE)
+			.with_peer_max_message_size(max_message_size)
 			.with_path_notify(move |key| {
 				let _ = path_sender.send(*key);
 			});
@@ -162,7 +166,7 @@ impl Core {
 			}
 		});
 		let (proto_sender, proto_receiver) = mpsc::unbounded_channel();
-		let node = Node::start(conn, PEER_MAX_MESSAGE_SIZE as usize, proto_sender);
+		let node = Node::start(conn, max_message_size as usize, proto_sender);
 		let nodeinfo = proto::build_nodeinfo(&options.node_info, options.node_info_privacy)
 			.map_err(|error| format!("error setting node info: {error}"))?;
 		let inner = Arc::new(CoreInner {
@@ -221,6 +225,12 @@ impl Core {
 	/// This node's routed /64 subnet.
 	pub fn subnet(&self) -> Subnet {
 		subnet_for_key(&self.inner.public)
+	}
+
+	/// The current time on this node's monotonic clock, as the state machines in
+	/// [`yggdrasil_proto`] expect it.
+	pub fn now(&self) -> Instant {
+		self.inner.now()
 	}
 
 	/// The largest packet [`Core::write_to`] accepts.
@@ -401,6 +411,10 @@ impl Core {
 }
 
 impl CoreInner {
+	pub(crate) fn now(&self) -> Instant {
+		self.node.inspect(|state| state.conn.now())
+	}
+
 	fn mtu(&self) -> u64 {
 		const SESSION_TYPE_OVERHEAD: u64 = 1;
 		let mtu = self.node.inspect(|state| state.conn.mtu());

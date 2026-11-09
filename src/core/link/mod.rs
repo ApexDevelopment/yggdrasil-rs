@@ -33,7 +33,7 @@ use super::CoreInner;
 use super::node::ConnError;
 use super::tls::TlsConfigs;
 use super::uri::{PeerUri, parse_go_duration, split_host_port};
-use super::version::{MAX_PASSWORD_LEN, Metadata};
+use super::version::{MAX_PASSWORD_LEN, Metadata, read_metadata};
 use crate::address::addr_for_key;
 
 pub use counted::Counted;
@@ -792,7 +792,7 @@ async fn handler(
 			.flush()
 			.await
 			.map_err(|error| LinkError::Other(format!("write handshake: {error}")))?;
-		Metadata::read_from(&mut stream, &options.password)
+		read_metadata(&mut stream, &options.password)
 			.await
 			.map_err(|error| LinkError::Other(error.to_string()))
 	};

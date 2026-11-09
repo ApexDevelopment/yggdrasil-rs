@@ -3,6 +3,10 @@
 //! Ported from Go's `encoding/hex`, BSD-3-Clause, Copyright 2009 The Go Authors.
 //! See THIRD-PARTY-NOTICES.
 
+use alloc::format;
+use alloc::string::String;
+use alloc::vec::Vec;
+
 fn value(byte: u8) -> Option<u8> {
 	(byte as char).to_digit(16).map(|digit| digit as u8)
 }

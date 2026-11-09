@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use petrified::types::PublicKey;
 
 /// The beacon a node multicasts to announce its link-local listener.

@@ -1,8 +1,6 @@
 //! Finds peers on local networks. Nodes multicast beacons advertising a
 //! link-local TLS listener, and connect to the beacons they hear.
 
-mod advertisement;
-
 use std::collections::HashMap;
 use std::io;
 use std::net::{Ipv6Addr, SocketAddr, SocketAddrV6};
@@ -10,13 +8,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
-pub use advertisement::Advertisement;
 use regex::Regex;
 use serde_json::{Map, Value};
 use socket2::{Domain, Protocol, Socket, Type};
 use tokio::net::UdpSocket;
 use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
+pub use yggdrasil_proto::advertisement::Advertisement;
 
 use crate::admin::AdminSocket;
 use crate::core::link::{Listener, format_socket_addr};
@@ -81,14 +79,9 @@ pub struct Multicast {
 }
 
 fn password_hash(password: &str, key: &[u8]) -> Option<Vec<u8>> {
-	if password.len() > 64 {
-		return None;
-	}
-	let hash = blake2b_simd::Params::new()
-		.hash_length(64)
-		.key(password.as_bytes())
-		.hash(key);
-	Some(hash.as_bytes().to_vec())
+	yggdrasil_proto::handshake::password_hash(password.as_bytes(), key)
+		.ok()
+		.map(|hash| hash.to_vec())
 }
 
 fn bind_group_socket() -> io::Result<UdpSocket> {

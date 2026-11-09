@@ -1,7 +1,7 @@
 //! Yggdrasil's IPv6 addresses and /64 subnets, derived from node public keys.
 
-use std::fmt;
-use std::net::Ipv6Addr;
+use core::fmt;
+use core::net::Ipv6Addr;
 
 use petrified::types::PublicKey;
 

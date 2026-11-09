@@ -215,6 +215,7 @@ fn core_options(config: &NodeConfig) -> Result<Options, BoxError> {
 			IpAddr::V4(_) => true,
 		})),
 		group_password: config.group_password.clone(),
+		max_message_size: None,
 	})
 }
 

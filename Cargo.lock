@@ -2352,7 +2352,6 @@ name = "yggdrasil-mesh"
 version = "0.1.0"
 dependencies = [
  "base64",
- "blake2b_simd",
  "form_urlencoded",
  "futures-util",
  "getrandom 0.4.3",
@@ -2378,6 +2377,19 @@ dependencies = [
  "tokio-tungstenite",
  "tokio-util",
  "tun-rs",
+ "yggdrasil-proto",
+]
+
+[[package]]
+name = "yggdrasil-proto"
+version = "0.1.0"
+dependencies = [
+ "blake2b_simd",
+ "hex",
+ "petrified",
+ "proptest",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

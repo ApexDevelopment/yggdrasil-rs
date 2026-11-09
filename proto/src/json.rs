@@ -4,6 +4,9 @@
 //! Parts are ported from Go's `encoding/json`, BSD-3-Clause, Copyright 2009 The
 //! Go Authors. See THIRD-PARTY-NOTICES.
 
+use alloc::format;
+use alloc::string::{String, ToString};
+
 use serde::Serialize;
 use serde_json::{Number, Value};
 

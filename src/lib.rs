@@ -1,6 +1,8 @@
 //! A Rust port of [Yggdrasil](https://yggdrasil-network.github.io/), an
 //! end-to-end encrypted IPv6 mesh network, built on the
-//! [petrified](../petrified) port of its Ironwood routing protocol.
+//! [petrified](https://github.com/ApexDevelopment/petrified) port of its Ironwood
+//! routing protocol. The parts that need no operating system are in
+//! [`yggdrasil_proto`], and re-exported here.
 //!
 //! The modules mirror yggdrasil-go's packages:
 //!
@@ -12,15 +14,15 @@
 //! - [`admin`]: the admin socket
 //! - [`config`]: the configuration file
 
-pub mod address;
+pub use yggdrasil_proto::address;
 pub mod admin;
 #[doc(hidden)]
 pub mod cli;
 pub mod config;
 pub mod core;
-pub mod go_hex;
+pub use yggdrasil_proto::go_hex;
 pub mod ipv6rwc;
-pub mod json;
+pub use yggdrasil_proto::json;
 pub mod multicast;
 pub mod tun;
 pub mod version;

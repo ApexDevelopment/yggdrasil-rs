@@ -1,0 +1,21 @@
+[package]
+name = "yggdrasil-proto"
+version = "0.1.0"
+edition = "2024"
+description = "The operating-system-free parts of yggdrasil-rs, for embedded Yggdrasil nodes"
+license-file = "../LICENSE"
+repository = "https://github.com/ApexDevelopment/yggdrasil-rs"
+readme = "README.md"
+keywords = ["yggdrasil", "mesh", "network", "ipv6", "no-std"]
+categories = ["network-programming", "no-std", "embedded"]
+
+[dependencies]
+petrified = { path = "../../petrified", version = "0.1.0", default-features = false }
+blake2b_simd = { version = "1.0.5", default-features = false }
+hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
+serde = { version = "1.0.229", default-features = false, features = ["alloc"] }
+serde_json = { version = "1.0.154", default-features = false, features = ["alloc", "preserve_order"] }
+
+[dev-dependencies]
+proptest = "1.12.0"
+serde_json = "1.0.154"

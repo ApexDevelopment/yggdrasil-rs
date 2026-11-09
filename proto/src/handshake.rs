@@ -1,9 +1,11 @@
-//! The metadata exchanged at the start of every peer link.
+//! The metadata exchanged at the start of every peer link, before Ironwood
+//! takes over the stream.
 
-use std::fmt;
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::fmt;
 
 use petrified::types::{PrivateKey, PublicKey, SIGNATURE_SIZE};
-use tokio::io::{AsyncRead, AsyncReadExt};
 
 pub const PROTOCOL_VERSION_MAJOR: u16 = 0;
 pub const PROTOCOL_VERSION_MINOR: u16 = 5;
@@ -15,6 +17,8 @@ const META_PRIORITY: u16 = 3;
 
 /// The longest password BLAKE2b accepts as a key.
 pub const MAX_PASSWORD_LEN: usize = 64;
+/// The `meta` preamble and the length of the rest.
+pub const HEADER_LEN: usize = 6;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum HandshakeError {
@@ -49,7 +53,7 @@ impl fmt::Display for HandshakeError {
 	}
 }
 
-impl std::error::Error for HandshakeError {}
+impl core::error::Error for HandshakeError {}
 
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Metadata {
@@ -61,7 +65,7 @@ pub struct Metadata {
 }
 
 /// Hashes a key with the link password, which the handshake signature covers.
-fn password_hash(password: &[u8], key: &[u8]) -> Result<[u8; 64], HandshakeError> {
+pub fn password_hash(password: &[u8], key: &[u8]) -> Result<[u8; 64], HandshakeError> {
 	if password.len() > MAX_PASSWORD_LEN {
 		return Err(HandshakeError::KeySize);
 	}
@@ -105,46 +109,27 @@ impl Metadata {
 		Ok(bs)
 	}
 
-	/// Decodes and verifies a complete encoding, as [`Metadata::read_from`] would read it.
+	/// Checks the fixed header, and returns the length of the body that follows it.
+	pub fn body_length(header: &[u8; HEADER_LEN]) -> Result<usize, HandshakeError> {
+		if &header[..4] != b"meta" {
+			return Err(HandshakeError::InvalidPreamble);
+		}
+		let length = u16::from_be_bytes([header[4], header[5]]) as usize;
+		if length < SIGNATURE_SIZE {
+			return Err(HandshakeError::InvalidLength);
+		}
+		Ok(length)
+	}
+
+	/// Decodes and verifies a complete encoding: the header, then the body.
 	pub fn decode(data: &[u8], password: &[u8]) -> Result<Self, HandshakeError> {
 		let eof = |read: usize| {
 			HandshakeError::Io(if read == 0 { "EOF" } else { "unexpected EOF" }.into())
 		};
-		let header = data.get(..6).ok_or(eof(data.len()))?;
-		if &header[..4] != b"meta" {
-			return Err(HandshakeError::InvalidPreamble);
-		}
-		let length = u16::from_be_bytes([header[4], header[5]]) as usize;
-		if length < SIGNATURE_SIZE {
-			return Err(HandshakeError::InvalidLength);
-		}
+		let header = data.get(..HEADER_LEN).ok_or(eof(data.len()))?;
+		let length = Self::body_length(header.try_into().expect("6 bytes"))?;
 		let body = data.get(6..6 + length).ok_or(eof(data.len() - 6))?;
 		Self::decode_body(body, password)
-	}
-
-	/// Reads and verifies metadata from the start of a stream.
-	pub async fn read_from<R: AsyncRead + Unpin>(
-		reader: &mut R,
-		password: &[u8],
-	) -> Result<Self, HandshakeError> {
-		let mut header = [0u8; 6];
-		reader
-			.read_exact(&mut header)
-			.await
-			.map_err(|error| HandshakeError::Io(error.to_string()))?;
-		if &header[..4] != b"meta" {
-			return Err(HandshakeError::InvalidPreamble);
-		}
-		let length = u16::from_be_bytes([header[4], header[5]]) as usize;
-		if length < SIGNATURE_SIZE {
-			return Err(HandshakeError::InvalidLength);
-		}
-		let mut body = vec![0u8; length];
-		reader
-			.read_exact(&mut body)
-			.await
-			.map_err(|error| HandshakeError::Io(error.to_string()))?;
-		Self::decode_body(&body, password)
 	}
 
 	/// Decodes everything after the 6-byte header.
