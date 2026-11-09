@@ -1,20 +1,12 @@
 # yggdrasil-rs
 
-A Rust port of [Yggdrasil](https://yggdrasil-network.github.io/), the end-to-end
-encrypted IPv6 mesh network.
+A Rust port of [Yggdrasil](https://yggdrasil-network.github.io/), the end-to-end encrypted IPv6 mesh network.
 
-It works alongside [yggdrasil-go](https://github.com/yggdrasil-network/yggdrasil-go)
-v0.5.15. Nodes of both implementations can peer with each other, route traffic for
-each other, and answer each other's nodeinfo and debug requests. The programs take
-the same flags, read the same configuration files and use the same admin socket
-protocol, so either implementation's `yggdrasilctl` can query either node.
+It works alongside [yggdrasil-go](https://github.com/yggdrasil-network/yggdrasil-go) v0.5.15 and should be fully compatible. The programs take the same flags, read the same configuration files and use the same admin socket protocol, so either implementation's `yggdrasilctl` can query either node.
 
 ## Installing
 
-On Linux, `contrib/install.sh` installs static x86_64 or aarch64 binaries from a
-release, and works on atomic distributions such as Fedora Silverblue. It puts the
-programs in `/usr/local/bin`, installs and starts a systemd service, and creates
-the `yggdrasil` group. It uses `sudo` or `doas` when it needs root.
+On Linux, `contrib/install.sh` installs static x86_64 or aarch64 binaries from a release. It puts the programs in `/usr/local/bin`, installs and starts a systemd service, and creates the `yggdrasil` group. It uses `sudo` or `doas` when it needs root.
 
 ```sh
 curl -fsSL https://github.com/ApexDevelopment/yggdrasil-rs/releases/latest/download/install.sh | sh
@@ -27,16 +19,11 @@ To pass options, add `-s --` after `sh`:
 - `--no-start` installs the service without starting it.
 - `--uninstall` removes the programs and service, and keeps `/etc/yggdrasil.conf`.
 
-To build the release files, run `contrib/release.sh`. It builds static binaries
-in Podman or Docker containers, and writes the archives, their checksums and
-`install.sh` to `dist/`. Upload those files to a release. Building for an
-architecture other than the host's needs `qemu-user-static`.
+To build the release files, run `contrib/release.sh`. It builds static binaries in Podman or Docker containers, and writes the archives, their checksums and `install.sh` to `dist/`. Building for an architecture other than the host's needs `qemu-user-static`.
 
 ## Building
 
-You need a recent stable Rust toolchain (it is developed with 1.97). Routing comes from
-[petrified](https://github.com/ApexDevelopment/petrified), the Rust port of
-Ironwood, which must be checked out next to this repository:
+You need a recent stable Rust toolchain (it is developed with 1.97). Routing comes from [petrified](https://github.com/ApexDevelopment/petrified), the Rust port of Ironwood, which must be checked out next to this repository:
 
 ```sh
 git clone https://github.com/ApexDevelopment/petrified
@@ -48,16 +35,9 @@ cd yggdrasil-rs
 cargo build --release
 ```
 
-This builds three programs in `target/release`:
+This builds three programs in `target/release`: `yggdrasil`, `yggdrasilctl`, and `genkeys`.
 
-| Program        | Purpose                                 |
-| -------------- | --------------------------------------- |
-| `yggdrasil`    | Runs a node                             |
-| `yggdrasilctl` | Queries a running node's admin socket   |
-| `genkeys`      | Searches for keys with higher addresses |
-
-To run a node, generate a configuration and start it with that file. Creating
-the TUN adapter needs root, or `CAP_NET_ADMIN` on Linux:
+To run a node, generate a configuration and start it with that file. Creating the TUN adapter needs root, or `CAP_NET_ADMIN` on Linux:
 
 ```sh
 ./target/release/yggdrasil -genconf > yggdrasil.conf
@@ -66,33 +46,20 @@ sudo ./target/release/yggdrasil -useconffile yggdrasil.conf
 
 Then query it with `yggdrasilctl`, for example `yggdrasilctl getPeers`.
 
-The build name and version come from git: the version is the latest `v*.*.*`
-tag, and builds from a branch other than `main` are named after it. Set
-`YGGDRASIL_BUILD_NAME` or `YGGDRASIL_BUILD_VERSION` when building to override
-them. Outside a git checkout, they come from `Cargo.toml`.
-
 ## Packages
 
-To build Debian and RPM packages, install
-[cargo-deb](https://crates.io/crates/cargo-deb) and
-[cargo-generate-rpm](https://crates.io/crates/cargo-generate-rpm), then run:
+To build Debian and RPM packages, install [cargo-deb](https://crates.io/crates/cargo-deb) and [cargo-generate-rpm](https://crates.io/crates/cargo-generate-rpm), then run:
 
 ```sh
 cargo deb                                    # target/debian/*.deb
 cargo build --release && cargo generate-rpm  # target/generate-rpm/*.rpm
 ```
 
-Both packages install the programs and the systemd units below, and create the
-`yggdrasil` group. The Debian package also enables and starts the service, as
-yggdrasil-go's package does. The RPM package follows Fedora's convention and
-leaves that to you: run `sudo systemctl enable --now yggdrasil` after installing.
+Both packages install the programs and the systemd units below, and create the `yggdrasil` group. The Debian package also enables and starts the service. The RPM package follows Fedora's convention and leaves it to the user to run `sudo systemctl enable --now yggdrasil` after installing.
 
 ## Running as a systemd service
 
-Without a package, you can install the service by hand. `contrib/systemd` has
-the same units as yggdrasil-go. The first time the service
-starts, it generates `/etc/yggdrasil.conf`. Members of the `yggdrasil` group can
-use `yggdrasilctl`.
+Without a package, you can install the service by hand. `contrib/systemd` has the same units as yggdrasil-go. The first time the service starts, it generates `/etc/yggdrasil.conf`. Members of the `yggdrasil` group can use `yggdrasilctl`.
 
 1. Install the programs:
 
@@ -116,26 +83,6 @@ use `yggdrasilctl`.
 
 To add peers, edit `/etc/yggdrasil.conf`, then run `sudo systemctl restart yggdrasil`.
 
-## Peering
-
-Peers and listeners are given as URIs, such as `tls://example.com:443`. They take
-the same query options as in yggdrasil-go: `key`, `priority`, `password`,
-`maxbackoff` and `sni`.
-
-| Scheme                    | Connect | Listen | Notes                                      |
-| ------------------------- | ------- | ------ | ------------------------------------------ |
-| `tcp://`                  | yes     | yes    |                                            |
-| `tls://`                  | yes     | yes    | Self-signed certificates, as in Go         |
-| `quic://`                 | yes     | yes    |                                            |
-| `ws://`                   | yes     | yes    | Uses the `ygg-ws` subprotocol              |
-| `wss://`                  | yes     | no     | Put a `ws://` listener behind a TLS proxy  |
-| `unix://`                 | yes     | yes    | Unix-like systems                          |
-| `socks://`, `sockstls://` | yes     | no     | `socks://[user:pass@]proxy:port/host:port` |
-
-To carry links over another transport, implement `core::LinkProtocol`, which
-turns a URI into a byte stream, and register it for a URI scheme with
-`Core::register_link_protocol`.
-
 ## Using the library
 
 The crate is published as `yggdrasil-mesh`, and imported as `yggdrasil`:
@@ -157,68 +104,35 @@ core.write_to(b"hello", &their_key)?;
 let (from, packet) = core.recv().await?;
 ```
 
-`Core` runs on tokio. To send and receive IPv6 packets addressed by Yggdrasil IP
-address instead of by key, wrap it in `ipv6rwc::ReadWriteCloser`.
+`Core` runs on tokio. To send and receive IPv6 packets addressed by Yggdrasil IP address instead of by key, wrap it in `ipv6rwc::ReadWriteCloser`.
 
-The modules match yggdrasil-go's packages:
-
-| Go package  | Rust module            | Contents                                      |
-| ----------- | ---------------------- | --------------------------------------------- |
-| `core`      | `yggdrasil::core`      | The node, peer links, transports and nodeinfo |
-| `address`   | `yggdrasil::address`   | IPv6 addresses and subnets derived from keys  |
-| `ipv6rwc`   | `yggdrasil::ipv6rwc`   | IPv6 packets addressed by IP address          |
-| `tun`       | `yggdrasil::tun`       | The TUN adapter                               |
-| `multicast` | `yggdrasil::multicast` | Peer discovery on local networks              |
-| `admin`     | `yggdrasil::admin`     | The admin socket                              |
-| `config`    | `yggdrasil::config`    | Configuration files                           |
-| `version`   | `yggdrasil::version`   | Build information                             |
+The module names match yggdrasil-go's packages.
 
 ## Platforms
 
-The code builds for Linux, macOS, Windows, FreeBSD and Android. On Windows, put
-`wintun.dll` next to the program. On Android and iOS, the operating system's VPN
-API creates the TUN device, so pass its file descriptor with
-`tun::InterfaceSource::FileDescriptor`. To build without the TUN adapter, use
-`--no-default-features`.
+The code builds for Linux, macOS, Windows, FreeBSD and Android. On Windows, put `wintun.dll` next to the program. On Android and iOS, the operating system's VPN API creates the TUN device, so pass its file descriptor with `tun::InterfaceSource::FileDescriptor`. To build without the TUN adapter, use `--no-default-features`.
 
 ## Differences from yggdrasil-go
 
 ### Fixed behaviour
 
-yggdrasil-rs does not copy these yggdrasil-go behaviours, which look unintended:
+yggdrasil-rs does not copy these yggdrasil-go behaviours, since they seem unintentional:
 
-- In yggdrasil-go, an entry in `MulticastInterfaces` takes any field it leaves
-  out from the default entry in the same position. On Linux, a first entry of
-  `{Regex: "eth0"}` therefore beacons and listens, and a second entry written the
-  same way does neither. In yggdrasil-rs, fields that an entry leaves out are
-  always `false`, empty or zero.
-- When several `MulticastInterfaces` regexes match an interface, yggdrasil-rs
-  uses the first match in the list. yggdrasil-go's choice can change between runs.
-- `getPeers` sorts by exact priority, cost and uptime. yggdrasil-go sorts costs
-  more than 2^63 apart in the wrong order, and treats uptimes less than a
-  second apart as equal.
+- In yggdrasil-go, any missing entry in `MulticastInterfaces` is filled in from the default entry in the same position. Therefore, on Linux, a first entry of `{Regex: "eth0"}` beacons and listens, and a second entry written the same way does nothing. In yggdrasil-rs, fields that an entry leaves out are always `false`, empty or zero.
+- When several `MulticastInterfaces` regexes match an interface, yggdrasil-rs uses the first match in the list. yggdrasil-go's choice can change between runs.
+- `getPeers` sorts by exact priority, cost and uptime. yggdrasil-go sorts costs more than 2^63 apart in the wrong order, and treats uptimes less than a second apart as equal.
 
 ### Other differences
 
-- The library API differs. Configuration is an `Options` struct instead of a list
-  of `SetupOption` values, and `Core::new` takes the private key and creates the
-  TLS certificate itself.
+- The library API differs. Configuration is an `Options` struct instead of a list of `SetupOption` values, and `Core::new` takes the private key and creates the TLS certificate itself.
 - I/O error messages use Rust's wording, such as `Connection refused (os error 111)`.
-- A configuration list set to `null` is read as an empty list. yggdrasil-go keeps
-  it as `null` when it writes the configuration back out.
-- The Windows service wrapper, OpenBSD `pledge`, the mobile bindings, and
-  WebSocket proxies from `HTTP_PROXY` are not ported.
-- The default configuration file and admin socket address can be changed with
-  `YGGDRASIL_DEFAULT_CONFIG` and `YGGDRASIL_DEFAULT_ADMIN_LISTEN` when building.
-  These replace the linker flags yggdrasil-go uses.
+- A configuration list set to `null` is read as an empty list. yggdrasil-go keeps it as `null` when it writes the configuration back out.
+- The Windows service wrapper, OpenBSD `pledge`, the mobile bindings, and WebSocket proxies from `HTTP_PROXY` are not ported.
+- The default configuration file and admin socket address can be changed with `YGGDRASIL_DEFAULT_CONFIG` and `YGGDRASIL_DEFAULT_ADMIN_LISTEN` when building. These replace the linker flags yggdrasil-go uses.
 
 ## Known issues
 
-The first nodeinfo or `debug_remote*` request to a node usually times out if it
-is sent right after the two nodes connect. Later requests succeed. yggdrasil-go
-behaves the same way. The request is sent once, and it probably gets lost while
-the encrypted session or the route is still being set up. If a request times
-out, send it again.
+The first nodeinfo or `debug_remote*` request to a node usually times out if it is sent right after the two nodes connect. Later requests succeed. **This matches the behaviour of yggdrasil-go.**
 
 ## Testing
 
@@ -227,21 +141,10 @@ cargo test --lib --test links    # Rust only
 cargo test                       # also runs the yggdrasil-go interop tests
 ```
 
-The interop tests need Go 1.26 or newer and network access to download
-yggdrasil-go. If `go` is not on your `PATH`, set `GO=/path/to/go`. The tests build
-yggdrasil-go from unmodified upstream source. They check that both
-implementations give the same results for the same inputs, that their nodes work
-together in mixed networks, and that each implementation's programs work with
-the other's nodes.
-The TUN tests run nodes in unprivileged network namespaces, and skip themselves
-where those are unavailable.
+The interop tests need Go 1.26 or newer and will download yggdrasil-go. The tests build yggdrasil-go from unmodified upstream source. They check that both implementations give the same results for the same inputs, that their nodes work together in mixed networks, and that each implementation's programs work with the other's nodes. The TUN tests run nodes in unprivileged network namespaces, and skip themselves where those are unavailable.
 
-`contrib/test-packages.sh` installs the Debian package, the RPM package and
-`install.sh` in Debian and Fedora containers, and checks that the nodes start and
-can reach each other. It needs Podman or Docker, cargo-deb and cargo-generate-rpm.
+`contrib/test-packages.sh` installs the Debian package, the RPM package and `install.sh` in Debian and Fedora containers, and checks that the nodes start and can reach each other. It needs Podman or Docker, cargo-deb and cargo-generate-rpm.
 
 ## License
 
-yggdrasil-rs uses the same license as yggdrasil-go: the LGPLv3, with an exception
-that allows static linking without the LGPL's relinking requirements. See
-[LICENSE](LICENSE).
+yggdrasil-rs uses the same license as yggdrasil-go: the LGPLv3, with an exception that allows static linking without the LGPL's relinking requirements. See [LICENSE](LICENSE).
