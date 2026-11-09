@@ -267,7 +267,9 @@ pub fn admin_request(admin: &str, request: &Value) -> Value {
 	// One write, so the server never closes with part of the request unread
 	stream.write_all(format!("{request}\n").as_bytes()).unwrap();
 	let mut text = String::new();
-	stream.read_to_string(&mut text).unwrap();
+	if let Err(error) = stream.read_to_string(&mut text) {
+		panic!("reading the response to {request} from {admin}: {error} (got {text:?})");
+	}
 	serde_json::from_str(&text).unwrap_or_else(|_| panic!("bad admin response {text:?}"))
 }
 
