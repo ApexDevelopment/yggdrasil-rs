@@ -77,11 +77,25 @@ IPv6 packets addressed by Yggdrasil IP; it looks up the keys behind addresses.
 
 ## Differences from Go
 
+### Fixed
+
+These yggdrasil-go behaviours look unintended, so yggdrasil-rs does not copy them:
+
+- In `MulticastInterfaces`, Go fills fields an entry leaves out from the default
+  entry in the same position: on Linux, `[{Regex: "eth0"}]` beacons and listens,
+  while a second entry written the same way does neither. Here every entry
+  starts empty, so unset fields are always `false`, `""` or `0`.
+- Interfaces use the first matching entry of `MulticastInterfaces`, in order. Go
+  iterates a map, so with overlapping regexes its choice varies between runs.
+- `getPeers` sorts by exact priority, cost and uptime. Go compares by
+  subtracting, which wraps around for large priorities and costs, and treats
+  uptimes less than a second apart as equal.
+
+### Other differences
+
 - Goroutines and actors are tokio tasks. Configuration is an `Options` struct
   rather than a list of `SetupOption`s, and `Core::new` takes the private key and
   makes the TLS certificate itself.
-- Interfaces use the first matching entry of `MulticastInterfaces`, in order. Go
-  iterates a map, so with overlapping regexes its choice varies between runs.
 - I/O errors use Rust's wording, e.g. `Connection refused (os error 111)`.
 - A `null` list in the configuration is treated as empty, where Go would keep it
   `null` when writing the configuration back out.
@@ -93,6 +107,14 @@ IPv6 packets addressed by Yggdrasil IP; it looks up the keys behind addresses.
   and `YGGDRASIL_BUILD_VERSION` at build time to override them, or
   `YGGDRASIL_DEFAULT_CONFIG` and `YGGDRASIL_DEFAULT_ADMIN_LISTEN` to change the
   platform defaults, as Go's linker flags do.
+
+## Known issues
+
+The first nodeinfo or `debug_remote*` request to a node right after peering
+with it usually times out, and later ones succeed. yggdrasil-go does the same, so
+this comes from the protocol rather than the port: the request is sent once,
+and appears to be lost while the session or route is still being set up. Retry
+if a request times out.
 
 ## Platforms
 
