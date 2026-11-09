@@ -201,7 +201,7 @@ fn unpack_keys(data: &[u8]) -> Value {
 }
 
 fn parse_key(key: &str) -> Result<PublicKey, String> {
-	let bytes = hex::decode(key).map_err(|error| error.to_string())?;
+	let bytes = crate::go_hex::decode(key)?;
 	let key: [u8; 32] = bytes
 		.try_into()
 		.map_err(|_| "invalid public key length".to_string())?;
@@ -231,9 +231,13 @@ impl CoreInner {
 				.map_err(|error| error.to_string())?;
 			return Ok(Value::Object(Map::from_iter([(own, nodeinfo)])));
 		}
-		let remote = hex::decode(key)
-			.map_err(|error| format!("failed to decode public key: {error}"))
-			.and_then(|_| parse_key(key))?;
+		let bytes = crate::go_hex::decode(key)
+			.map_err(|error| format!("failed to decode public key: {error}"))?;
+		let remote = PublicKey(
+			bytes
+				.try_into()
+				.map_err(|_| "invalid public key length".to_string())?,
+		);
 		let response = self
 			.request(Request::NodeInfo, remote)
 			.await

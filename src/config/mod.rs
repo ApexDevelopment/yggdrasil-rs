@@ -297,8 +297,7 @@ impl NodeConfig {
 			match key.to_ascii_lowercase().as_str() {
 				"privatekey" => {
 					if let Some(text) = field("config.KeyBytes").string()? {
-						self.private_key =
-							hex::decode(text).map_err(|e| error(format!("encoding/hex: {e}")))?;
+						self.private_key = crate::go_hex::decode(text).map_err(error)?;
 					}
 				}
 				"privatekeypath" => field("string").set_string(&mut self.private_key_path)?,

@@ -208,6 +208,18 @@ impl Daemon {
 		response["response"].clone()
 	}
 
+	/// Like [`Daemon::call`], retrying a few times. The first request to another
+	/// node can be lost while the session is set up, in yggdrasil-go too.
+	pub fn call_remote(&self, name: &str, arguments: Value) -> Value {
+		for _ in 0..4 {
+			let response = self.request(name, arguments.clone());
+			if response["status"] == "success" {
+				return response["response"].clone();
+			}
+		}
+		panic!("{name} never succeeded");
+	}
+
 	/// The keys of peers whose links are up.
 	pub fn peer_keys(&self) -> Vec<String> {
 		self.call("getPeers", json!({}))["peers"]
@@ -252,7 +264,8 @@ pub fn admin_request(admin: &str, request: &Value) -> Value {
 	stream
 		.set_read_timeout(Some(Duration::from_secs(15)))
 		.unwrap();
-	writeln!(stream, "{request}").unwrap();
+	// One write, so the server never closes with part of the request unread
+	stream.write_all(format!("{request}\n").as_bytes()).unwrap();
 	let mut text = String::new();
 	stream.read_to_string(&mut text).unwrap();
 	serde_json::from_str(&text).unwrap_or_else(|_| panic!("bad admin response {text:?}"))

@@ -18,6 +18,7 @@ pub mod admin;
 pub mod cli;
 pub mod config;
 pub mod core;
+pub mod go_hex;
 pub mod ipv6rwc;
 pub mod json;
 pub mod multicast;

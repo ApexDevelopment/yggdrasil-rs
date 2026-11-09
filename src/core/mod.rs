@@ -117,6 +117,8 @@ pub(crate) struct CoreInner {
 	path_notify: Mutex<Option<PathNotify>>,
 	lookup_logger: Arc<Mutex<Option<LookupLogger>>>,
 	cancel: CancellationToken,
+	/// Lets methods called from outside the runtime start tasks.
+	runtime: tokio::runtime::Handle,
 }
 
 /// A running Yggdrasil node. Cloning gives another handle to the same node.
@@ -176,6 +178,7 @@ impl Core {
 			path_notify: Mutex::new(None),
 			lookup_logger,
 			cancel: CancellationToken::new(),
+			runtime: tokio::runtime::Handle::current(),
 		});
 		inner.proto.set_nodeinfo(nodeinfo);
 		tokio::spawn(proto::run(inner.clone(), proto_receiver));

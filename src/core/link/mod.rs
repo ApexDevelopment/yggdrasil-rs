@@ -537,9 +537,10 @@ pub(crate) fn add(
 		links.insert(info.clone(), link.clone());
 		link
 	};
-	let core = core.clone();
+	let task_core = core.clone();
 	let uri = uri.clone();
-	tokio::spawn(async move {
+	core.runtime.spawn(async move {
+		let core = task_core;
 		run_outbound(&core, &uri, &info, &options, &link).await;
 		core.links.remove_if_current(&info, &link);
 	});
