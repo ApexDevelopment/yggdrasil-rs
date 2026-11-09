@@ -13,10 +13,13 @@
 //! - [`config`]: the configuration file
 
 pub mod address;
+pub mod admin;
 pub mod config;
 pub mod core;
 pub mod ipv6rwc;
 pub mod json;
+pub mod multicast;
+pub mod tun;
 pub mod version;
 
 pub use petrified::types::{PrivateKey, PublicKey};
