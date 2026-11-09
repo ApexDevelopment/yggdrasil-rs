@@ -208,6 +208,8 @@ impl Node {
 			// Already gone if the protocol dropped it
 			let _ = state.conn.remove_peer(id);
 			match state.peers.remove(&id).and_then(|slot| slot.error) {
+				// The node itself was closed, so the link did not fail
+				Some(Error::Closed) => Err(ConnError::Closed),
 				Some(error) => Err(ConnError::Protocol(error)),
 				None => result,
 			}
