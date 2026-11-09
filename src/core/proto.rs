@@ -1,6 +1,6 @@
 //! Node-to-node requests carried in sessions: nodeinfo and remote debug queries.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -56,7 +56,8 @@ pub(crate) struct Proto {
 
 /// Builds this node's nodeinfo JSON from the configured map.
 pub fn build_nodeinfo(given: &Map<String, Value>, privacy: bool) -> Result<Vec<u8>, String> {
-	let mut nodeinfo = given.clone();
+	// Go marshals maps with sorted keys
+	let mut nodeinfo: BTreeMap<String, Value> = given.clone().into_iter().collect();
 	if !privacy {
 		nodeinfo.insert("buildname".into(), version::build_name().into());
 		nodeinfo.insert("buildversion".into(), version::build_version().into());

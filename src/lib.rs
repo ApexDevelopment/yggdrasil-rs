@@ -13,7 +13,9 @@
 //! - [`config`]: the configuration file
 
 pub mod address;
+pub mod config;
 pub mod core;
+pub mod ipv6rwc;
 pub mod json;
 pub mod version;
 
