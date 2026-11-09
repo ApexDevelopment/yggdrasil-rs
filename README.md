@@ -37,6 +37,39 @@ sudo ./target/release/yggdrasil -useconffile yggdrasil.conf
 
 Then query it with `yggdrasilctl`, for example `yggdrasilctl getPeers`.
 
+The build name and version come from git: the version is the latest `v*.*.*`
+tag, and builds from a branch other than `main` are named after it. Set
+`YGGDRASIL_BUILD_NAME` or `YGGDRASIL_BUILD_VERSION` when building to override
+them. Outside a git checkout, they come from `Cargo.toml`.
+
+## Running as a systemd service
+
+`contrib/systemd` has the same units as yggdrasil-go. The first time the service
+starts, it generates `/etc/yggdrasil.conf`. Members of the `yggdrasil` group can
+use `yggdrasilctl`.
+
+1. Install the programs:
+
+   ```sh
+   sudo install -m 755 target/release/yggdrasil target/release/yggdrasilctl /usr/bin/
+   ```
+
+2. Install the units:
+
+   ```sh
+   sudo cp contrib/systemd/*.service /etc/systemd/system/
+   ```
+
+3. Create the group, then start the service:
+
+   ```sh
+   sudo groupadd --system yggdrasil
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now yggdrasil
+   ```
+
+To add peers, edit `/etc/yggdrasil.conf`, then run `sudo systemctl restart yggdrasil`.
+
 ## Peering
 
 Peers and listeners are given as URIs, such as `tls://example.com:443`. They take
@@ -122,11 +155,9 @@ yggdrasil-rs does not copy these yggdrasil-go behaviours, which look unintended:
   it as `null` when it writes the configuration back out.
 - The Windows service wrapper, OpenBSD `pledge`, the mobile bindings, and
   WebSocket proxies from `HTTP_PROXY` are not ported.
-- The build name and version reported in nodeinfo default to this crate's name
-  and version. To change them, set `YGGDRASIL_BUILD_NAME` and
-  `YGGDRASIL_BUILD_VERSION` when building. `YGGDRASIL_DEFAULT_CONFIG` and
-  `YGGDRASIL_DEFAULT_ADMIN_LISTEN` change the default configuration file and
-  admin socket address. These replace the linker flags yggdrasil-go uses.
+- The default configuration file and admin socket address can be changed with
+  `YGGDRASIL_DEFAULT_CONFIG` and `YGGDRASIL_DEFAULT_ADMIN_LISTEN` when building.
+  These replace the linker flags yggdrasil-go uses.
 
 ## Known issues
 
