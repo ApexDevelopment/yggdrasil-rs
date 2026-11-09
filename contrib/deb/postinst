@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "configure" ] && ! getent group yggdrasil >/dev/null; then
+	groupadd --system yggdrasil
+fi
+
+#DEBHELPER#

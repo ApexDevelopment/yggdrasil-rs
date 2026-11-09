@@ -42,9 +42,26 @@ tag, and builds from a branch other than `main` are named after it. Set
 `YGGDRASIL_BUILD_NAME` or `YGGDRASIL_BUILD_VERSION` when building to override
 them. Outside a git checkout, they come from `Cargo.toml`.
 
+## Packages
+
+To build Debian and RPM packages, install
+[cargo-deb](https://crates.io/crates/cargo-deb) and
+[cargo-generate-rpm](https://crates.io/crates/cargo-generate-rpm), then run:
+
+```sh
+cargo deb                                    # target/debian/*.deb
+cargo build --release && cargo generate-rpm  # target/generate-rpm/*.rpm
+```
+
+Both packages install the programs and the systemd units below, and create the
+`yggdrasil` group. The Debian package also enables and starts the service, as
+yggdrasil-go's package does. The RPM package follows Fedora's convention and
+leaves that to you: run `sudo systemctl enable --now yggdrasil` after installing.
+
 ## Running as a systemd service
 
-`contrib/systemd` has the same units as yggdrasil-go. The first time the service
+Without a package, you can install the service by hand. `contrib/systemd` has
+the same units as yggdrasil-go. The first time the service
 starts, it generates `/etc/yggdrasil.conf`. Members of the `yggdrasil` group can
 use `yggdrasilctl`.
 
