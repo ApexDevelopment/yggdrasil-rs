@@ -1,11 +1,12 @@
-//! Build information, as reported in nodeinfo and by the admin socket.
+//! Build information, as reported in nodeinfo and by the admin socket. `build.rs`
+//! sets it from git, like yggdrasil-go's build script.
 
 pub fn build_name() -> &'static str {
-	option_env!("YGGDRASIL_BUILD_NAME").unwrap_or(env!("CARGO_PKG_NAME"))
+	env!("YGGDRASIL_BUILD_NAME")
 }
 
 pub fn build_version() -> &'static str {
-	option_env!("YGGDRASIL_BUILD_VERSION").unwrap_or(env!("CARGO_PKG_VERSION"))
+	env!("YGGDRASIL_BUILD_VERSION")
 }
 
 /// The operating system, named as Go's `runtime.GOOS` names it.
