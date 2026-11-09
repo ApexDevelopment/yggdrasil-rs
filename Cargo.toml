@@ -1,0 +1,46 @@
+[package]
+name = "yggdrasil"
+version = "0.1.0"
+edition = "2024"
+description = "A Rust port of Yggdrasil, an end-to-end encrypted IPv6 mesh network"
+license = "LGPL-3.0-only"
+
+[features]
+default = ["tun"]
+# The TUN adapter used by the yggdrasil binary
+tun = ["dep:tun-rs"]
+
+[dependencies]
+petrified = { path = "../petrified" }
+base64 = "0.23.1"
+blake2b_simd = "1.0.5"
+deser-hjson = "2.2.6"
+form_urlencoded = "1.2.2"
+futures-util = { version = "0.3.34", default-features = false, features = ["sink", "std"] }
+getrandom = "0.4.3"
+hex = "0.4.3"
+log = { version = "0.4.35", features = ["std"] }
+netdev = { version = "0.47.0", default-features = false }
+percent-encoding = "2.3.2"
+quinn = { version = "0.11.12", default-features = false, features = ["log", "runtime-tokio", "rustls-ring"] }
+rcgen = { version = "0.14.10", default-features = false, features = ["crypto", "ring"] }
+regex = "1.13.1"
+rustls = { version = "0.23.46", default-features = false, features = ["logging", "ring", "std", "tls12"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+socket2 = { version = "0.6.5", features = ["all"] }
+tokio = { version = "1.54.1", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["logging", "ring", "tls12"] }
+tokio-socks = "0.5.3"
+tokio-tungstenite = { version = "0.30.0", default-features = false, features = ["handshake"] }
+tokio-util = "0.7.20"
+tun-rs = { version = "2.8.18", features = ["async_tokio"], optional = true }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2.191"
+syslog = "7.0.0"
+
+[dev-dependencies]
+hex = "0.4.3"
+proptest = "1.12.0"
+tempfile = "3.27.0"
