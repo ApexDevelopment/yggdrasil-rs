@@ -47,11 +47,14 @@ impl Request {
 	}
 }
 
+/// Receives the response to a request.
+type Waiter = oneshot::Sender<Vec<u8>>;
+
 #[derive(Default)]
 pub(crate) struct Proto {
 	nodeinfo: Mutex<Vec<u8>>,
 	/// A newer request to the same node replaces an older one, as in Go.
-	pending: Mutex<HashMap<(Request, PublicKey), oneshot::Sender<Vec<u8>>>>,
+	pending: Mutex<HashMap<(Request, PublicKey), Waiter>>,
 }
 
 /// Builds this node's nodeinfo JSON from the configured map.

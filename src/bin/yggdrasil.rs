@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use log::LevelFilter;
 use regex::Regex;
-use serde_json::Map;
 use yggdrasil::admin::AdminSocket;
 use yggdrasil::cli::flags::{Flags, ParseError, Parsed};
 use yggdrasil::cli::logging;
@@ -207,7 +206,7 @@ fn core_options(config: &NodeConfig) -> Result<Options, BoxError> {
 	Ok(Options {
 		peers,
 		listen: config.listen.clone(),
-		node_info: config.node_info.clone().unwrap_or_else(Map::new),
+		node_info: config.node_info.clone().unwrap_or_default(),
 		node_info_privacy: config.node_info_privacy,
 		allowed_public_keys,
 		peer_filter: Some(Arc::new(|ip: IpAddr| match ip {

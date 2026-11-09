@@ -125,6 +125,13 @@ async fn start(
 ) -> Result<(String, u64), BoxError> {
 	let address = rwc.address();
 	let device = match source {
+		#[cfg(any(target_os = "android", target_os = "ios"))]
+		InterfaceSource::Name(_) => {
+			return Err(
+				"this platform's VPN API provides the TUN; pass its file descriptor".into(),
+			);
+		}
+		#[cfg(not(any(target_os = "android", target_os = "ios")))]
 		InterfaceSource::Name(name) => {
 			let mut builder = tun_rs::DeviceBuilder::new()
 				.mtu(mtu.min(u16::MAX as u64) as u16)
@@ -143,8 +150,14 @@ async fn start(
 				.map_err(|error| format!("failed to use TUN file descriptor: {error}"))?
 		}
 	};
-	let name = device.name().unwrap_or_default();
-	let actual_mtu = device.mtu().map(u64::from).map(supported_mtu).unwrap_or(0);
+	#[cfg(not(any(target_os = "android", target_os = "ios")))]
+	let (name, actual_mtu) = (
+		device.name().unwrap_or_default(),
+		device.mtu().map(u64::from).map(supported_mtu).unwrap_or(0),
+	);
+	// The VPN API configured the device, so take the requested MTU as given
+	#[cfg(any(target_os = "android", target_os = "ios"))]
+	let (name, actual_mtu) = (String::new(), supported_mtu(mtu));
 	if actual_mtu != mtu {
 		log::warn!(
 			"Warning: Interface MTU {mtu} automatically adjusted to {actual_mtu} (supported range is 1280-{})",

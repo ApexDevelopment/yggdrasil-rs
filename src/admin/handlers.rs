@@ -358,9 +358,12 @@ struct LookupEntry {
 	time: i64,
 }
 
+/// Each looked-up key's path and when the lookup arrived.
+type LookupRecords = Arc<Mutex<HashMap<PublicKey, (Vec<u64>, SystemTime)>>>;
+
 /// Records the lookups this node handles, for the `lookups` request.
 pub(super) fn add_lookups_handler(admin: &Arc<AdminSocket>) {
-	let lookups: Arc<Mutex<HashMap<PublicKey, (Vec<u64>, SystemTime)>>> = Arc::default();
+	let lookups: LookupRecords = Arc::default();
 	let recorder = lookups.clone();
 	admin.core.set_lookup_logger(move |info| {
 		recorder

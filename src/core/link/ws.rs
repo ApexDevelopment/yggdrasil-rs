@@ -1,3 +1,6 @@
+// tungstenite's handshake callback dictates the large error type
+#![allow(clippy::result_large_err)]
+
 use std::io;
 use std::pin::Pin;
 use std::task::{Context, Poll, ready};
