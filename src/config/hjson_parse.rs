@@ -312,7 +312,8 @@ impl Parser<'_> {
 				|| (self.ch == b'/' && matches!(self.peek(0), b'/' | b'*'));
 			if at_end {
 				let text = String::from_utf8_lossy(&value);
-				let trimmed = text.trim_matches(|c: char| c.is_ascii_whitespace() || c == '\u{b}');
+				// Unicode whitespace, as Go's strings.TrimSpace
+				let trimmed = text.trim();
 				let interpreted = match first {
 					b'f' if trimmed == "false" => Some(Hjson::Bool(false)),
 					b'n' if trimmed == "null" => Some(Hjson::Null),
@@ -594,6 +595,14 @@ mod tests {
 		for text in ["{a: [1", "{a b: 1}", "{\"a\": \"b\nc\"}", "{a: 1}}"] {
 			assert!(parse(text).is_err(), "{text}");
 		}
+	}
+
+	#[test]
+	fn trims_unicode_whitespace_like_go() {
+		assert_eq!(
+			parse("{\n  v: \u{2000}x\u{3000}\n}").unwrap(),
+			Hjson::Object(vec![("v".into(), bare("x", Hjson::String("x".into())))])
+		);
 	}
 
 	proptest! {
