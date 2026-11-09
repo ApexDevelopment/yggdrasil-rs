@@ -2348,7 +2348,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "yggdrasil"
+name = "yggdrasil-mesh"
 version = "0.1.0"
 dependencies = [
  "base64",

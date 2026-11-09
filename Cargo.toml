@@ -1,9 +1,17 @@
 [package]
-name = "yggdrasil"
+name = "yggdrasil-mesh"
 version = "0.1.0"
 edition = "2024"
 description = "A Rust port of Yggdrasil, an end-to-end encrypted IPv6 mesh network"
-license = "LGPL-3.0-only"
+license-file = "LICENSE"
+repository = "https://github.com/ApexDevelopment/yggdrasil-rs"
+readme = "README.md"
+keywords = ["yggdrasil", "mesh", "network", "ipv6", "vpn"]
+categories = ["network-programming", "command-line-utilities"]
+exclude = ["dist/"]
+
+[lib]
+name = "yggdrasil"
 
 [features]
 default = ["tun"]
@@ -11,7 +19,7 @@ default = ["tun"]
 tun = ["dep:tun-rs"]
 
 [dependencies]
-petrified = { path = "../petrified" }
+petrified = { path = "../petrified", version = "0.1.0" }
 base64 = "0.23.1"
 blake2b_simd = "1.0.5"
 form_urlencoded = "1.2.2"
@@ -45,6 +53,7 @@ proptest = "1.12.0"
 tempfile = "3.27.0"
 
 [package.metadata.deb]
+name = "yggdrasil"
 maintainer = "yggdrasil-rs developers"
 section = "net"
 extended-description = "An end-to-end encrypted IPv6 mesh network, compatible with yggdrasil-go."
@@ -62,6 +71,9 @@ systemd-units = [
 ]
 
 [package.metadata.generate-rpm]
+name = "yggdrasil"
+# The LICENSE file adds yggdrasil-go's static linking exception
+license = "LGPL-3.0-only"
 summary = "End-to-end encrypted IPv6 mesh network"
 assets = [
 	{ source = "target/release/yggdrasil", dest = "/usr/bin/yggdrasil", mode = "755" },
@@ -70,6 +82,7 @@ assets = [
 	{ source = "contrib/systemd/yggdrasil.service", dest = "/usr/lib/systemd/system/yggdrasil.service", mode = "644" },
 	{ source = "contrib/systemd/yggdrasil-default-config.service", dest = "/usr/lib/systemd/system/yggdrasil-default-config.service", mode = "644" },
 	{ source = "README.md", dest = "/usr/share/doc/yggdrasil/README.md", mode = "644", doc = true },
+	{ source = "LICENSE", dest = "/usr/share/licenses/yggdrasil/LICENSE", mode = "644", doc = true },
 ]
 post_install_script = "contrib/rpm/post_install.sh"
 pre_uninstall_script = "contrib/rpm/pre_uninstall.sh"
