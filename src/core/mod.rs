@@ -26,6 +26,7 @@ pub use link::{
 };
 use link::{LinkType, Links};
 use node::{Node, TYPE_SESSION_TRAFFIC};
+pub use proto::build_nodeinfo;
 use tls::TlsConfigs;
 use uri::PeerUri;
 

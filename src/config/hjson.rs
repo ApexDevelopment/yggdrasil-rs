@@ -125,17 +125,11 @@ impl Writer {
 				self.out.push(']');
 				self.indent = outer;
 			}
-			Value::Object(map) => {
-				let mut entries: Vec<_> = map.iter().collect();
-				// hjson-go writes maps sorted by key
-				entries.sort_by(|a, b| a.0.cmp(b.0));
-				self.fields(
-					separator,
-					entries
-						.into_iter()
-						.map(|(name, value)| (name.as_str(), "", value)),
-				);
-			}
+			// Callers sort Go maps; Go structs keep their field order
+			Value::Object(map) => self.fields(
+				separator,
+				map.iter().map(|(name, value)| (name.as_str(), "", value)),
+			),
 		}
 	}
 
@@ -350,7 +344,7 @@ mod tests {
 	fn nests_objects_and_arrays() {
 		assert_eq!(
 			render(json!([{"b": 1, "a": []}, {}])),
-			"{\n  v: [\n    {\n      a: []\n      b: 1\n    }\n    {}\n  ]\n}"
+			"{\n  v: [\n    {\n      b: 1\n      a: []\n    }\n    {}\n  ]\n}"
 		);
 	}
 }

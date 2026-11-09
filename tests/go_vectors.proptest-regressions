@@ -1,0 +1,10 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc f9684561cdd9cd44623061015c5dee512aca2ae2e66fef6c442939b58ba9728b # shrinks to text = "A:"
+cc 4b5b828e4ef2d8ff90eb1c0b8259cd1b8b9424c151a20c0ce7adf9ae1d855665 # shrinks to config = Object {"PrivateKey": String("00000000000000000000000000000000000000000000000000000000000000003b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29")}
+cc 1c87dee8890394aa8d318543616aa7d2a22ddefb4497c15f561580079efeef97 # shrinks to seed = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], major = 0, minor = 0, priority = 0, password = " 0  A0A0a  0 a0 A Aa0aa   0AA A3o'8GZ~G9x,tdKjyl\"%`:<:/|orJw{y$E'"
+cc 9d854abe412c84125f7705b8d45c10b8dc344d24d7108a93aa8686d4683007a3 # shrinks to seed = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], priority = 0, encode_password = "", decode_password = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", corruption = [(Index(2699523789188207347), 83)], truncate = None, random = None

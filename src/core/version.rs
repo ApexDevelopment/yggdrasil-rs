@@ -23,6 +23,8 @@ pub enum HandshakeError {
 	InvalidPassword,
 	IncorrectPassword,
 	HashFailure,
+	/// The password is too long to key BLAKE2b with.
+	KeySize,
 	Io(String),
 }
 
@@ -41,6 +43,7 @@ impl fmt::Display for HandshakeError {
 			}
 			HandshakeError::IncorrectPassword => f.write_str("password does not match remote side"),
 			HandshakeError::HashFailure => f.write_str("invalid hash length"),
+			HandshakeError::KeySize => f.write_str("blake2b: invalid key size"),
 			HandshakeError::Io(error) => f.write_str(error),
 		}
 	}
@@ -60,7 +63,7 @@ pub struct Metadata {
 /// Hashes a key with the link password, which the handshake signature covers.
 fn password_hash(password: &[u8], key: &[u8]) -> Result<[u8; 64], HandshakeError> {
 	if password.len() > MAX_PASSWORD_LEN {
-		return Err(HandshakeError::InvalidPassword);
+		return Err(HandshakeError::KeySize);
 	}
 	let hash = blake2b_simd::Params::new()
 		.hash_length(64)
@@ -100,6 +103,23 @@ impl Metadata {
 		let remaining = (bs.len() - 6) as u16;
 		bs[4..6].copy_from_slice(&remaining.to_be_bytes());
 		Ok(bs)
+	}
+
+	/// Decodes and verifies a complete encoding, as [`Metadata::read_from`] would read it.
+	pub fn decode(data: &[u8], password: &[u8]) -> Result<Self, HandshakeError> {
+		let eof = |read: usize| {
+			HandshakeError::Io(if read == 0 { "EOF" } else { "unexpected EOF" }.into())
+		};
+		let header = data.get(..6).ok_or(eof(data.len()))?;
+		if &header[..4] != b"meta" {
+			return Err(HandshakeError::InvalidPreamble);
+		}
+		let length = u16::from_be_bytes([header[4], header[5]]) as usize;
+		if length < SIGNATURE_SIZE {
+			return Err(HandshakeError::InvalidLength);
+		}
+		let body = data.get(6..6 + length).ok_or(eof(data.len() - 6))?;
+		Self::decode_body(body, password)
 	}
 
 	/// Reads and verifies metadata from the start of a stream.
@@ -163,6 +183,9 @@ impl Metadata {
 		}
 		if !fields.is_empty() {
 			return Err(HandshakeError::InvalidLength);
+		}
+		if password.len() > MAX_PASSWORD_LEN {
+			return Err(HandshakeError::InvalidPassword);
 		}
 		let Some(key) = meta.public_key else {
 			return Err(HandshakeError::HashFailure);
@@ -228,7 +251,7 @@ mod tests {
 		let (secret, meta) = metadata([1; 32], 0, 5, 0);
 		assert_eq!(
 			meta.encode(&secret, &[b'x'; 65]),
-			Err(HandshakeError::InvalidPassword)
+			Err(HandshakeError::KeySize)
 		);
 	}
 
