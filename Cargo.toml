@@ -26,7 +26,7 @@ rcgen = { version = "0.14.10", default-features = false, features = ["crypto", "
 regex = "1.13.1"
 rustls = { version = "0.23.46", default-features = false, features = ["logging", "ring", "std", "tls12"] }
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = { version = "1.0.154", features = ["preserve_order"] }
+serde_json = { version = "1.0.154", features = ["preserve_order", "raw_value"] }
 socket2 = { version = "0.6.5", features = ["all"] }
 tokio = { version = "1.54.1", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
 tokio-rustls = { version = "0.26.6", default-features = false, features = ["logging", "ring", "tls12"] }

@@ -558,6 +558,27 @@ fn multicast_value(interface: &MulticastInterfaceConfig) -> Value {
 	Value::Object(object)
 }
 
+/// The `AdminListen` value of a configuration file, as yggdrasilctl reads it:
+/// `None` if it is missing, empty or `none`.
+pub fn read_admin_listen(data: &[u8]) -> Result<Option<String>, ConfigError> {
+	let text = decode_text(data)?;
+	let Hjson::Object(fields) = hjson_parse::parse(&text).map_err(|e| error(e.to_string()))? else {
+		return Ok(None);
+	};
+	Ok(fields
+		.iter()
+		.find(|(key, _)| key == "AdminListen")
+		.and_then(|(_, value)| match value {
+			Hjson::String(text) => Some(text.clone()),
+			Hjson::Bare(_, value) => match value.as_ref() {
+				Hjson::String(text) => Some(text.clone()),
+				_ => None,
+			},
+			_ => None,
+		})
+		.filter(|listen| !listen.is_empty() && listen != "none"))
+}
+
 /// Decodes UTF-8, or UTF-16 if there is a byte order mark, as Go's config loader does.
 fn decode_text(data: &[u8]) -> Result<String, ConfigError> {
 	let little_endian = match data {

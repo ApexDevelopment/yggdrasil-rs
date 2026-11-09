@@ -14,6 +14,8 @@
 
 pub mod address;
 pub mod admin;
+#[doc(hidden)]
+pub mod cli;
 pub mod config;
 pub mod core;
 pub mod ipv6rwc;
