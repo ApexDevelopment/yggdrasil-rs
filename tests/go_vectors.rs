@@ -195,11 +195,14 @@ fn nodeinfo_value() -> impl Strategy<Value = Value> {
 	})
 }
 
+/// An interface entry. yggdrasil-rs deliberately differs from Go for entries
+/// that leave out `Regex`, `Beacon` or `Listen`, so those are always given.
 fn multicast_interface() -> impl Strategy<Value = Value> {
 	(
-		prop::option::of(tricky_string()),
-		prop::option::of(any::<bool>()),
-		prop::option::of(any::<bool>()),
+		// Always set: Go would otherwise inherit them from the default entry
+		tricky_string().prop_map(Some),
+		any::<bool>().prop_map(Some),
+		any::<bool>().prop_map(Some),
 		prop::option::of(prop_oneof![
 			(0u64..70000).prop_map(Value::from),
 			Just(json!(1.5))
@@ -351,4 +354,17 @@ proptest! {
 			.is_ok_and(|config| build_nodeinfo(&config.node_info.unwrap_or_default(), true).is_ok());
 		prop_assert_eq!(go_accepts, rust_accepts, "Go error: {}", go["error"]);
 	}
+}
+
+#[test]
+fn interface_entries_do_not_inherit_defaults_unlike_go() {
+	let key = hex::encode(PrivateKey::from_seed(&[1; 32]).0);
+	let text = format!(
+		"{{\"PrivateKey\": \"{key}\", \"MulticastInterfaces\": [{{\"Regex\": \"eth0\"}}]}}"
+	);
+	let go = vectors(json!({"op": "config", "text": text}));
+	let go_json: Value = serde_json::from_str(go["json"].as_str().unwrap()).unwrap();
+	assert_eq!(go_json["MulticastInterfaces"][0]["Beacon"], true);
+	let rust = NodeConfig::read_from(text.as_bytes()).unwrap();
+	assert!(!rust.multicast_interfaces[0].beacon && !rust.multicast_interfaces[0].listen);
 }

@@ -1,6 +1,6 @@
 //! The node configuration file. It reads the same HJSON or JSON files as
-//! yggdrasil-go, with the same quirks: keys match case-insensitively, and
-//! values are merged onto a freshly generated default configuration.
+//! yggdrasil-go: keys match case-insensitively, and values are merged onto a
+//! freshly generated default configuration.
 
 mod defaults;
 mod hjson;
@@ -323,14 +323,10 @@ impl NodeConfig {
 				"multicastinterfaces" => match value.resolved() {
 					Hjson::Null => self.multicast_interfaces.clear(),
 					Hjson::Array(items) => {
-						// Go decodes into the existing elements, merging with the defaults
+						// Unlike Go, entries never inherit fields from the defaults they replace
 						let mut merged = Vec::with_capacity(items.len());
-						for (i, item) in items.iter().enumerate() {
-							let mut interface = self
-								.multicast_interfaces
-								.get(i)
-								.cloned()
-								.unwrap_or_default();
+						for item in items {
+							let mut interface = MulticastInterfaceConfig::default();
 							apply_multicast(&mut interface, item)?;
 							merged.push(interface);
 						}
@@ -618,19 +614,16 @@ mod tests {
 	const KEY: &str = "e70c61bd87126cd1ef122911582a231cf2239b27ac2c1522a31fb924ec3208c66f960a37c718041a7de3062090904d5d27043faad8e22f663b493879250c7e3c";
 
 	#[test]
-	fn merges_onto_defaults_like_go() {
+	fn merges_onto_defaults() {
 		let text = format!(
 			"{{\n privatekey: {KEY}\n multicastinterfaces: [{{Regex: \"eth0\"}}, {{regex: \"wl.*\", port: 5}}]\n Nodeinfo: {{b: 1.0, a: \"x<y\"}}\n IfMTU: 1500\n}}"
 		);
 		let config = NodeConfig::read_from(text.as_bytes()).unwrap();
 		assert_eq!(hex::encode(&config.private_key), KEY);
 		assert_eq!(config.if_mtu, 1500);
-		let defaults = get_defaults();
 		assert_eq!(config.multicast_interfaces[0].regex, "eth0");
-		assert_eq!(
-			config.multicast_interfaces[0].beacon,
-			defaults.multicast_interfaces[0].beacon
-		);
+		// Not inherited from the default entry, unlike in Go
+		assert!(!config.multicast_interfaces[0].beacon);
 		assert!(!config.multicast_interfaces[1].beacon);
 		assert_eq!(config.multicast_interfaces[1].port, 5);
 		assert!(

@@ -342,7 +342,7 @@ fn command_lines_match() {
 	let configs = [
 		format!("{{\n  PrivateKey: {key}\n}}"),
 		format!(
-			"PrivateKey: {key}\nPeers: [\n  tls://a.b:1\n  \"#odd\"\n]\nNodeInfo: {{\n  name: x<y\n  n: 1.50\n  big: 1e21\n  list: [1, true, null]\n}}\nMulticastInterfaces: [{{Regex: \"eth0\"}}]\nIfMTU: 1500\nLogLookups: true"
+			"PrivateKey: {key}\nPeers: [\n  tls://a.b:1\n  \"#odd\"\n]\nNodeInfo: {{\n  name: x<y\n  n: 1.50\n  big: 1e21\n  list: [1, true, null]\n}}\nMulticastInterfaces: [{{Regex: \"eth0\", Beacon: true, Listen: false}}]\nIfMTU: 1500\nLogLookups: true"
 		),
 		format!(
 			r#"{{"privatekey": "{key}", "InterfacePeers": {{"eth1": ["quic://[fe80::1%25eth1]:1"]}}, "AllowedPublicKeys": ["{}"], "GroupPassword": "12", "AdminListen": "none"}}"#,
