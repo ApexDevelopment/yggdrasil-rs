@@ -27,7 +27,8 @@ fn timestamp() -> String {
 		.unwrap_or_default();
 	#[cfg(unix)]
 	{
-		let time = now as libc::time_t;
+		// Inferred from localtime_r, as musl deprecates naming time_t
+		let time = now as _;
 		let mut tm: libc::tm = unsafe { std::mem::zeroed() };
 		// Safe: both pointers are valid for the duration of the call
 		if !unsafe { libc::localtime_r(&time, &mut tm) }.is_null() {
