@@ -1,6 +1,5 @@
 //! The built-in admin requests.
 
-use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -139,45 +138,25 @@ impl PeerEntry {
 	}
 }
 
-/// Go compares with `int(a - b)`, which wraps for unsigned fields and truncates floats.
-fn go_diff_unsigned(a: u64, b: u64) -> Ordering {
-	(a.wrapping_sub(b) as i64).cmp(&0)
-}
-
-fn go_diff_float(a: f64, b: f64) -> Ordering {
-	((a - b) as i64).cmp(&0)
-}
-
-/// Go's stable insertion sort, which tolerates comparisons that are not a total order.
-fn insertion_sort<T>(items: &mut [T], compare: impl Fn(&T, &T) -> Ordering) {
-	for i in 1..items.len() {
-		let mut j = i;
-		while j > 0 && compare(&items[j], &items[j - 1]) == Ordering::Less {
-			items.swap(j, j - 1);
-			j -= 1;
-		}
-	}
-}
-
 fn sort_peers(peers: &mut [PeerEntry], by: &str) {
 	let by_key = |a: &PeerEntry, b: &PeerEntry| a.key.cmp(&b.key);
-	let by_priority = |a: &PeerEntry, b: &PeerEntry| go_diff_unsigned(a.priority, b.priority);
-	let by_cost = |a: &PeerEntry, b: &PeerEntry| go_diff_unsigned(a.cost, b.cost);
-	let by_uptime = |a: &PeerEntry, b: &PeerEntry| go_diff_float(a.uptime, b.uptime);
+	let by_priority = |a: &PeerEntry, b: &PeerEntry| a.priority.cmp(&b.priority);
+	let by_cost = |a: &PeerEntry, b: &PeerEntry| a.cost.cmp(&b.cost);
+	let by_uptime = |a: &PeerEntry, b: &PeerEntry| a.uptime.total_cmp(&b.uptime);
 	match by.to_lowercase().as_str() {
-		"uptime" => insertion_sort(peers, |a, b| {
+		"uptime" => peers.sort_by(|a, b| {
 			by_uptime(a, b)
 				.then_with(|| by_key(a, b))
 				.then_with(|| by_priority(a, b))
 				.then_with(|| by_cost(a, b))
 		}),
-		"cost" => insertion_sort(peers, |a, b| {
+		"cost" => peers.sort_by(|a, b| {
 			by_cost(a, b)
 				.then_with(|| by_key(a, b))
 				.then_with(|| by_priority(a, b))
 				.then_with(|| by_uptime(a, b))
 		}),
-		_ => insertion_sort(peers, |a, b| {
+		_ => peers.sort_by(|a, b| {
 			a.inbound
 				.cmp(&b.inbound)
 				.then_with(|| by_key(a, b))
@@ -442,7 +421,7 @@ mod tests {
 	}
 
 	#[test]
-	fn uptime_differences_under_a_second_tie_like_go() {
+	fn sorts_by_exact_uptime_and_large_costs() {
 		let mut peers = vec![
 			entry("b", false, 1.5),
 			entry("a", false, 1.2),
@@ -451,5 +430,10 @@ mod tests {
 		sort_peers(&mut peers, "uptime");
 		let keys: Vec<_> = peers.iter().map(|peer| peer.key.as_str()).collect();
 		assert_eq!(keys, ["c", "a", "b"]);
+
+		let mut peers = vec![entry("a", false, 0.0), entry("b", false, 0.0)];
+		peers[0].cost = u64::MAX;
+		sort_peers(&mut peers, "cost");
+		assert_eq!(peers[0].key, "b");
 	}
 }
